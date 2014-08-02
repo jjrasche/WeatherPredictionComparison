@@ -54,51 +54,23 @@ class WeatherUndergroundAPI:
 
 
 	def __init__(self):
-		print(self.db.name)
 		print(str(datetime.datetime.now()) + "   api constructor")
 		self.addPrediction()
 
 
 	def addPrediction(self):
-		year = data['hourly_forecast'][0]['FCTTIME']['year']
-		month = data['hourly_forecast'][0]['FCTTIME']['mon']
-		day = data['hourly_forecast'][0]['FCTTIME']['mday']
-		hour = data['hourly_forecast'][0]['FCTTIME']['hour']
-		minute = data['hourly_forecast'][0]['FCTTIME']['min']
-		sec = data['hourly_forecast'][0]['FCTTIME']['sec']
-		tableName = 'weatherUnderground_' + year + '_' + month + '_' + day + '_' + twoDigitNumber(hour) + minute
-
 		try:
-			table = self.db.addNewTable(tableName)
-			for hr in range(0,36):
-				# form arguments of prediction
-				time = year + "-" + month + "-" + day + " " + hour + ":" + minute + ":" + sec
-				top = year + "-" + month + "-" + addHoursToTimeStamp(hr, int(day), int(hour)) + ":" + minute + ":" + sec
-				cond = data['hourly_forecast'][hr]['condition']
-				temp = float(data['hourly_forecast'][hr]['temp']['english'])
-				hum = int(data['hourly_forecast'][hr]['humidity'])
-				rainAmount = float(data['hourly_forecast'][hr]['qpf']['english'])
-				pop = int(data['hourly_forecast'][hr]['pop'])
-				wind = int(data['hourly_forecast'][hr]['wspd']['english'])
-
-				prediction = sqlInterface.Prediction(time, top, cond, temp, hum, rainAmount, pop, wind)
-				table.addRow(prediction)
-
+			table = self.db.addNewTable("weatherUnderground", data)
 		except:
 			print(str(datetime.datetime.now()) +"  table operation")
 			print(traceback.format_exc())
 
-		
-		
-def addHoursToTimeStamp(add_hours, day, hour):
-	while((add_hours + hour) > 23):
-		day += 1
-		add_hours -= 24
-	hour += add_hours
-	return(str(day) + " " + str(hour))
 
-def twoDigitNumber(num):
-	if(num < 10):
-		return("0" + str(num))
-	else:
-		return(str(num))
+
+
+
+
+
+
+
+

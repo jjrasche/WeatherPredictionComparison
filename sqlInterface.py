@@ -1,3 +1,18 @@
+'''
+    All mutable variables in a class are shared with all instances of that class 
+        >>> class A: foo = []
+        >>> a, b = A(), A()
+        >>> a.foo.append(5)
+        >>> b.foo
+        [5]
+        >>> class A:
+        ...  def __init__(self): self.foo = []
+        >>> a, b = A(), A()
+        >>> a.foo.append(5)
+        >>> b.foo    
+        []
+    int and strings are not shared b/c they are inmutable
+'''
 import sqlite3
 import datetime
 import traceback
@@ -17,33 +32,45 @@ class Table:
     dbName = ""
     tableName = ""
     tableType = ""
-    rows = []
-    printThis = False
+    printThis = True
     isNew = False
 
 
-    def __init__(self, tableName, tableType, dbName, new):
+    def __init__(self, tableName, tableType, dbName, new, data, date):
         self.dbName = dbName
         self.tableName = tableName  
         self.isNew = new
         self.tableType = tableType
-            # retrieve the table from database and add each row to the Table class
+        self.rows = []
+        if (new == False):
+            self.addAllExistingRows()
+        else:
+            self.createTable()
+            self.addAllNewRows(data, date)
 
 
-    def addAllRows(self):
+    def addAllExistingRows(self):
         # pull table data 
         cmd = "select * from " + self.tableName
         if(self.printThis):
             print("sqlInterface:  " + cmd)
         rows = sqlite3.connect(self.dbName).execute(cmd)
-
-        count = 0
         for row in rows:
-            count += 1
             self.rows.append(row)
-            print(count)
-            self.printTable()
-        return(count)
+
+    def addAllNewRows(self, data, date):
+        for hr in range(0,36):
+            # form arguments of prediction
+            time = date
+            top = date + datetime.timedelta(hours=hr)
+            cond = data['hourly_forecast'][hr]['condition']
+            temp = float(data['hourly_forecast'][hr]['temp']['english'])
+            hum = int(data['hourly_forecast'][hr]['humidity'])
+            rainAmount = float(data['hourly_forecast'][hr]['qpf']['english'])
+            pop = int(data['hourly_forecast'][hr]['pop'])
+            wind = int(data['hourly_forecast'][hr]['wspd']['english'])
+
+            self.addRow(Prediction(time, top, cond, temp, hum, rainAmount, pop, wind))
 
 
     def addRow(self, prediction):
@@ -75,7 +102,7 @@ class Table:
             if(self.printThis):
                 print("sqlInterface:  " + cmd)
             sqlite3.connect(self.dbName).execute(cmd)
-            #self.commitChanges()
+            self.commitChanges()
 
 
     ''' check for error, if is a "table already exists" error, then consume
@@ -91,8 +118,13 @@ class Table:
             cmd += "rainAmount REAL, rainChance INTEGER, wind REAL)"
         if(self.printThis):
             print("sqlInterface:  " + cmd)
-        sqlite3.connect(self.dbName).execute(cmd)
-        self.commitChanges()
+        try:
+            sqlite3.connect(self.dbName).execute(cmd)
+            self.commitChanges()
+        except:
+            print(str(datetime.datetime.now()) +" table already created")
+            print(traceback.format_exc()) 
+
 
     def deleteTable(self):
         cmd = "drop table "
@@ -109,8 +141,17 @@ class Table:
             count = count + 1
         return(count)
 
+    def printTableFromDatabase(self):
+        cmd = "select * from " + self.tableName
+        if(self.printThis):
+            print("sqlInterface:  " + cmd)
+        rows = sqlite3.connect(self.dbName).execute(cmd)
+        for row in rows:
+            self.rows.append(row)
+
     def commitChanges(self):
         sqlite3.connect(self.dbName).commit()
+        sleep(.3)
         if(self.printThis):
             print("sqlInterface:  commiting changes")
 
@@ -134,36 +175,24 @@ class Database:
         self.loadTables()   # load tables
 
     def loadTables(self):
-        nameList = self.getTables()
-            # create a table, add name, populate the rows, and add it to the database's table list
+        nameList = self.getTableNames()
         for name in nameList:
-            print(name)
-            tmpTable = Table(name[0], "prediction", self.name, False)
-            print("location: " + str(id(tmpTable)))
-            '''
-            print(tmpTable.addAllRows())
-            print("************************************************************")
-            tmpTable.printTable()
-            '''
-            self.tables.append(tmpTable)
-
+            self.tables.append(Table(name[0], "prediction", self.name, False, None, None))
 
     # add a new table to the tables list, return this table for caller to add rows to
-    def addNewTable(self, tableName):
-        tmpTable = Table(tableName, "prediction", self.name, True)
-        '''
-        try:
-            tmpTable.createTable()
-        except:
-            print(str(datetime.datetime.now()) +" table already created")
-            print(traceback.format_exc())  
-
-        tmpTable.addAllRows()
+    def addNewTable(self, prefix, data):
+        print(type(data['hourly_forecast'][0]['FCTTIME']['min']))
+        date = datetime.datetime(int(data['hourly_forecast'][0]['FCTTIME']['year']),
+                     int(data['hourly_forecast'][0]['FCTTIME']['mon']),
+                     int(data['hourly_forecast'][0]['FCTTIME']['mday']),
+                     int(data['hourly_forecast'][0]['FCTTIME']['hour']),
+                     int(data['hourly_forecast'][0]['FCTTIME']['min']))
+        tableName = prefix + str(date.year) + '_' + str(date.month) + '_' + str(date.day) + '_' + str(twoDigitNumber(date.hour)) + str(date.minute)
+        tmpTable = Table(tableName, "prediction", self.name, True, data, date) 
         self.tables.append(tmpTable)
-'''
-        return(tmpTable) 
 
-    def getTables(self):
+
+    def getTableNames(self):
         cursor = sqlite3.connect(self.name).execute("SELECT name FROM sqlite_master WHERE type='table';")
         return(cursor.fetchall())
 
@@ -211,4 +240,19 @@ def convert_point(s):
 # Register the adapter and converter
 sqlite3.register_adapter(Prediction, adapt_point)
 sqlite3.register_converter("point", convert_point)
+
+        
+def addHoursToTimeStamp(add_hours, day, hour):
+    while((add_hours + hour) > 23):
+        day += 1
+        add_hours -= 24
+    hour += add_hours
+    return(str(day) + " " + str(hour))
+
+def twoDigitNumber(num):
+    if(num < 10):
+        return("0" + str(num))
+    else:
+        return(str(num))
+
 
