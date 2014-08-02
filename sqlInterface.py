@@ -11,106 +11,165 @@ def strToDatetime(string):
     string = string.replace(" ", "-")
     return(time.strptime(string, "%Y-%m-%d-%H:%M:%S"))
 
+
 ''' assume tableName will be valid when any of the methods are called'''
 class Table:
-    dbName = "WUnderground.db"
-    tableName = "none"
-    tableType = "none"
-    connection = sqlite3.connect(dbName)
-    printThis = 0
+    dbName = ""
+    tableName = ""
+    tableType = ""
+    rows = []
+    printThis = False
+    isNew = False
 
-    '''  if created without a valid tablename, then don't add a tablename, 
-        if created without a valid db then exit
-    '''
-    def __init__(self, tableName, dbName):
-        if(dbName == ""):
-            print("db name invalid")
-            exit(1)
-        else:
-            self.dbName = dbName
 
-        if(tableName != ""):                
-            self.tableName = tableName      # if tablename is valid set it otherwise wait 
+    def __init__(self, tableName, tableType, dbName, new):
+        self.dbName = dbName
+        self.tableName = tableName  
+        self.isNew = new
+        self.tableType = tableType
+            # retrieve the table from database and add each row to the Table class
 
-    def insertRow(self, row):
-        self.checkValidtableName()
-        command = "insert into "
-        command += self.tableName
-        command += " values ("
-        if(self.tableType == "prediction"):
-            command += "'"
-            command += str(row.timeStamp)
-            command += "', '"
-            command += str(row.timeOfPrediction)
-            command += "', '"
-            command += str(row.condition)
-            command += "', "
-            command += str(row.temperature)
-            command += ", "
-            command += str(row.humidity)
-            command += ", "
-            command += str(row.rainAmount)
-            command += ", "
-            command += str(row.rainChance)
-            command += ", "
-            command += str(row.wind)
-            command += ")"        
+
+    def addAllRows(self):
+        # pull table data 
+        cmd = "select * from " + self.tableName
         if(self.printThis):
-            print("sqlInterface:  " + command)
-        self.connection.execute(command)
+            print("sqlInterface:  " + cmd)
+        rows = sqlite3.connect(self.dbName).execute(cmd)
+
+        count = 0
+        for row in rows:
+            count += 1
+            self.rows.append(row)
+            print(count)
+            self.printTable()
+        return(count)
+
+
+    def addRow(self, prediction):
+            # add to local row
+        self.rows.append(prediction)
+            # add to database if this is a new table
+        if(self.isNew): 
+            cmd = "insert into "
+            cmd += self.tableName
+            cmd += " values ("
+            if(self.tableType == "prediction"):
+                cmd += "'"
+                cmd += str(prediction.timeStamp)
+                cmd += "', '"
+                cmd += str(prediction.timeOfPrediction)
+                cmd += "', '"
+                cmd += str(prediction.condition)
+                cmd += "', "
+                cmd += str(prediction.temperature)
+                cmd += ", "
+                cmd += str(prediction.humidity)
+                cmd += ", "
+                cmd += str(prediction.rainAmount)
+                cmd += ", "
+                cmd += str(prediction.rainChance)
+                cmd += ", "
+                cmd += str(prediction.wind)
+                cmd += ")"        
+            if(self.printThis):
+                print("sqlInterface:  " + cmd)
+            sqlite3.connect(self.dbName).execute(cmd)
+            #self.commitChanges()
+
 
     ''' check for error, if is a "table already exists" error, then consume
         exception. This solves the problem of erroring out when testing '''
     def createTable(self):
-        self.checkValidtableName()
-        command = "create table "
-        command += self.tableName
-        command += " ("
+        cmd = "create table "
+        cmd += self.tableName
+        cmd += " ("
         if(self.tableType == "prediction"):
-            command += "timeStamp TEXT, "
-            command += "timeOfPrediction TEXT, "
-            command += "condition TEXT, temperature REAL, humidity INTEGER, "
-            command += "rainAmount REAL, rainChance INTEGER, wind REAL)"
+            cmd += "timeStamp TEXT, "
+            cmd += "timeOfPrediction TEXT, "
+            cmd += "condition TEXT, temperature REAL, humidity INTEGER, "
+            cmd += "rainAmount REAL, rainChance INTEGER, wind REAL)"
         if(self.printThis):
-            print("sqlInterface:  " + command)
-        self.connection.execute(command)
+            print("sqlInterface:  " + cmd)
+        sqlite3.connect(self.dbName).execute(cmd)
+        self.commitChanges()
 
     def deleteTable(self):
-        self.checkValidtableName()
-        command = "drop table "
-        command += self.tableName
+        cmd = "drop table "
+        cmd += self.tableName
         if(self.printThis):
-            print("sqlInterface:  " + command)
-        self.connection.execute(command)
+            print("sqlInterface:  " + cmd)
+        sqlite3.connect(self.dbName).execute(cmd)
+        self.commitChanges()
 
     def printTable(self):
-        self.checkValidtableName()
-        command = "select * from "
-        command += self.tableName
-        if(self.printThis):
-            print("sqlInterface:  " + command)
-        c = self.connection.execute(command)
-        for row in c:
-            Prediction.printRow(row)
-
-    def checkValidtableName(self):
-        if(self.tableName == "none"):
-            return(False)
-        return(True)
+        count = 0
+        for row in self.rows:
+            print(str(count) + str(row))
+            count = count + 1
+        return(count)
 
     def commitChanges(self):
-        sleep(.5)
-        self.connection.commit()
+        sqlite3.connect(self.dbName).commit()
         if(self.printThis):
             print("sqlInterface:  commiting changes")
-        sleep(.5)
 
-    def listTablesinDb(self):
-        cursor = self.connection.execute("SELECT name FROM sqlite_master WHERE type='table';")
-        print(type(cursor))
-        print(cursor.fetchall())
+    '''  return list of strings that are tables in this table's database '''
+    def getAllTablesinDb(self):
+        cursor = sqlite3.connect(self.dbName).execute("SELECT name FROM sqlite_master WHERE type='table';")
+        return(cursor.fetchall())
 
 
+
+'''  3 ways around not having name information at time of class instantiation
+    X    1) declare dummy instance of connection first then override when get name
+    G    2) redeclare connection in every function that needs it 
+        3) create subclasses of Database e.g. WU database that has name hardcoded  '''
+class Database:
+    name = ""
+    tables = []
+
+    def __init__(self, dbName):
+        self.name = dbName
+        self.loadTables()   # load tables
+
+    def loadTables(self):
+        nameList = self.getTables()
+            # create a table, add name, populate the rows, and add it to the database's table list
+        for name in nameList:
+            print(name)
+            tmpTable = Table(name[0], "prediction", self.name, False)
+            print("location: " + str(id(tmpTable)))
+            '''
+            print(tmpTable.addAllRows())
+            print("************************************************************")
+            tmpTable.printTable()
+            '''
+            self.tables.append(tmpTable)
+
+
+    # add a new table to the tables list, return this table for caller to add rows to
+    def addNewTable(self, tableName):
+        tmpTable = Table(tableName, "prediction", self.name, True)
+        '''
+        try:
+            tmpTable.createTable()
+        except:
+            print(str(datetime.datetime.now()) +" table already created")
+            print(traceback.format_exc())  
+
+        tmpTable.addAllRows()
+        self.tables.append(tmpTable)
+'''
+        return(tmpTable) 
+
+    def getTables(self):
+        cursor = sqlite3.connect(self.name).execute("SELECT name FROM sqlite_master WHERE type='table';")
+        return(cursor.fetchall())
+
+
+
+# open table from database and create 
 
 
 # pred = Prediction(initializeDatetime(), initializeDatetime(), "none", 75.0, 60, 0.2, 10, 15)
@@ -133,21 +192,23 @@ class Prediction:
         self.rainAmount = rainAmount
         self.rainChance = pop
         self.wind = wind
-        
-    def printPrediction(self):
-        print("time: " + str(self.timeStamp))
-        print("top: " + str(self.timeOfPrediction))
-        print("cond: " + self.condition)
-        print("temp: " + str(self.temperature))
-        print("hum: " + str(self.humidity))
-        print("rain: " + str(self.rainAmount))
-        print("pop: " + str(self.rainChance))
-        print("wind: " + str(self.wind))
 
-    @staticmethod
-    def printRow(row):
-        print("(" + str(row[0]) + ", " + str(row[1]) + ", " + str(row[2]) + ", " + \
-            str(row[3]) + ", " + str(row[4]) + ", " + str(row[5]) + ", " + str(row[6]) + \
-            ", " + str(row[7]) + ")")
+    def __repr__(self):
+        return "%s;%s;%s;%f;%d;%f;%d;%d" % (self.timeStamp, self.timeOfPrediction, self.condition, 
+                                        self.temperature, self.humidity, self.rainAmount, 
+                                        self.rainChance, self.wind)
 
+
+def adapt_point(pred):
+    return "%s;%s;%s;%f;%d;%f;%d;%d" % (pred.timeStamp, pred.timeOfPrediction, pred.condition, 
+                                        pred.temperature, pred.humidity, pred.rainAmount, 
+                                        pred.rainChance, pred.wind)
+
+def convert_point(s):
+    time, top, cond, temp, hum, rainAmount, pop, wind = s.split(";")
+    return Prediction(time, top, cond, float(temp), int(hum), float(rainAmount), int(pop), int(wind))
+
+# Register the adapter and converter
+sqlite3.register_adapter(Prediction, adapt_point)
+sqlite3.register_converter("point", convert_point)
 

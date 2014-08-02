@@ -5,9 +5,9 @@ def comparePrediction(prediction, groundTruth):
 	return True
 
 
-def formStatsTable():
+def completeStatsTableBuild():
 	# for all tables in database
-
+	for
 	# extract current weather from table
 
 	# extract prediciton from previous 36 hours of table

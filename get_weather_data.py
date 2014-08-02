@@ -1,8 +1,10 @@
 from time import sleep
 #sleep(30)
 import WeatherUndergroundAPI
-api = WeatherUndergroundAPI.WeatherUndergroundAPI()
+import sqlInterface
 
+
+api = WeatherUndergroundAPI.WeatherUndergroundAPI()
 
 '''
 functionality to record statistics
