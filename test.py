@@ -2,7 +2,11 @@ import sqlite3
 import datetime
 import traceback
 from time import sleep
+import os
 
+print(os.path.dirname(os.path.realpath("__file__")))
+
+'''
 # return a datetime initialized to noon on my birthday
 def initializeDatetime():
     return(datetime.datetime(1988, 01, 23, 0, 0, 0, 0))
@@ -48,7 +52,7 @@ def convert_point(s):
 
 # Register the adapter and converter
 sqlite3.register_adapter(Prediction, adapt_point)
-sqlite3.register_converter("doesn't matter", convert_point)
+sqlite3.register_converter("Prediction", convert_point)		# (Class to convert to,  function to do converting)
 
 pred = Prediction(initializeDatetime(), initializeDatetime(), "awe", 7.0, 60, 0.2, 10, 15)
 pred1 = Prediction(initializeDatetime(), initializeDatetime(), "snap", 7.0, 60, 0.2, 10, 15)
@@ -58,7 +62,7 @@ pred1 = Prediction(initializeDatetime(), initializeDatetime(), "snap", 7.0, 60, 
 con = sqlite3.connect("test3.db", detect_types=sqlite3.PARSE_DECLTYPES)
 cur = con.cursor()
 
-createCmd = "create table test(pred)"
+createCmd = "create table test(pred predicTion)"		# <table name>(<column name> <column type>"case does not matter")   
 try:
 	cur.execute(createCmd)
 except:
@@ -66,16 +70,15 @@ except:
 	cur.execute(createCmd)
 
 
-# stores p into test derived from pred, 
-cur.execute("insert into test(pred) values (?)", (pred,))
+# stores thisShit into table test's pred column 
+cur.execute("insert into test(pred) values (?)", (thisShit,))
 cur.execute("insert into test(pred) values (?)", (pred1,))
 
 cur.execute("select * from test")
 #print "with declared types:", cur.fetchone()[0]
 #need to copy to another variable right away, can only do one operation on the cursor
-x = cur.fetchall()
+x = cur.fetchall()			# returns list of tuples with first member being the class in converter
 print(type(x))
 print(x)
-
-
+'''
 

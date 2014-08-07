@@ -1,10 +1,27 @@
 from time import sleep
-#sleep(30)
+#sleep(30)   # wait for internet connection to be made if waking from sleep
 import WeatherUndergroundAPI
 import sqlInterface
-
+import comparisonFunctions
 
 api = WeatherUndergroundAPI.WeatherUndergroundAPI()
+r1 = api.db.tables[0].rows[0]
+r2 = api.db.tables[0].rows[30]
+
+t1 = comparisonFunctions.strToDt(r1.timeStamp)
+t2 = comparisonFunctions.strToDt(r2.timeOfPrediction)
+
+
+
+
+
+
+
+
+
+
+
+
 
 '''
 functionality to record statistics

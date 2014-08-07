@@ -17,6 +17,7 @@ import sqlite3
 import datetime
 import traceback
 from time import sleep
+import os
 
 # return a datetime initialized to noon on my birthday
 def initializeDatetime():
@@ -62,15 +63,11 @@ def convert_point(s):
     time, top, cond, temp, hum, rainAmount, pop, wind = s.split(";")
     return Prediction(time, top, cond, float(temp), int(hum), float(rainAmount), int(pop), int(wind))
 
-
 # Register the adapter and converter
 sqlite3.register_adapter(Prediction, adapt_point)
-sqlite3.register_converter("doesn't matter", convert_point)
-pred = Prediction(initializeDatetime(), initializeDatetime(), "awe", 7.0, 60, 0.2, 10, 15)
-pred1 = Prediction(initializeDatetime(), initializeDatetime(), "snap", 7.0, 60, 0.2, 10, 15)
+sqlite3.register_converter("Prediction", convert_point)
 
 
-''' assume tableName will be valid when any of the methods are called'''
 class Table:
     dbName = ""
     tableName = ""
@@ -78,29 +75,6 @@ class Table:
     printThis = True
     isNew = False
 
-    '''
-    con = sqlite3.connect("WUnderground.db", detect_types=sqlite3.PARSE_DECLTYPES)
-    cur = con.cursor()
-
-    createCmd = "create table test(pred)"
-    try:
-        cur.execute(createCmd)
-    except:
-        cur.execute("drop table test")
-        cur.execute(createCmd)
-
-
-    # stores p into test derived from pred, 
-    cur.execute("insert into test(pred) values (?)", (pred,))
-    cur.execute("insert into test(pred) values (?)", (pred1,))
-
-    cur.execute("select * from test")
-    #print "with declared types:", cur.fetchone()[0]
-    #need to copy to another variable right away, can only do one operation on the cursor
-    x = cur.fetchall()
-    print(type(x))
-    print(x)
-    '''
     def __init__(self, tableName, tableType, dbName, new, data, date):
         self.dbName = dbName
         self.tableName = tableName  
@@ -116,14 +90,12 @@ class Table:
             self.addAllNewRows(data, date)
             self.commitChanges()
 
-
-
     def addAllExistingRows(self):
         # pull table data 
         cmd = "select * from " + self.tableName
         predictions = self.cur.execute(cmd).fetchall()
         for pred in predictions:
-            self.rows.append(pred[0][0])
+            self.rows.append(pred[0])
 
     def addAllNewRows(self, data, date):
         for hr in range(0,36):
@@ -139,7 +111,6 @@ class Table:
 
             self.addRow(Prediction(time, top, cond, temp, hum, rainAmount, pop, wind))
 
-
     def addRow(self, prediction):
             # add to local row
         self.rows.append(prediction)
@@ -149,41 +120,10 @@ class Table:
             print("sqlInterface: " + cmd)
         self.cur.execute(cmd, (prediction,))
 
-        '''
-        if(self.isNew): 
-            cmd = "insert into "
-            cmd += self.tableName
-            cmd += " values ("
-            if(self.tableType == "prediction"):
-                cmd += "'"
-                cmd += str(prediction.timeStamp)
-                cmd += "', '"
-                cmd += str(prediction.timeOfPrediction)
-                cmd += "', '"
-                cmd += str(prediction.condition)
-                cmd += "', "
-                cmd += str(prediction.temperature)
-                cmd += ", "
-                cmd += str(prediction.humidity)
-                cmd += ", "
-                cmd += str(prediction.rainAmount)
-                cmd += ", "
-                cmd += str(prediction.rainChance)
-                cmd += ", "
-                cmd += str(prediction.wind)
-                cmd += ")"        
-            if(self.printThis):
-                print("sqlInterface:**" + cmd + "**")
-            sqlite3.connect(self.dbName).execute(cmd)
-            self.commitChanges()
-            '''
-
-    ''' check for error, if is a "table already exists" error, then consume
-        exception. This solves the problem of erroring out when testing '''
     def createTable(self):
         cmd = "create table "
         cmd += self.tableName
-        cmd += " (p prediction)"
+        cmd += " (p Prediction)"
 
         if(self.printThis):
             print("sqlInterface:  " + cmd)
@@ -194,7 +134,6 @@ class Table:
             print(str(datetime.datetime.now()) +" table already created")
             print(traceback.format_exc()) 
             raise
-
 
     def deleteTable(self):
         cmd = "drop table "
@@ -226,11 +165,6 @@ class Table:
             print("sqlInterface:  commiting changes")
 
 
-
-'''  3 ways around not having name information at time of class instantiation
-    X    1) declare dummy instance of connection first then override when get name
-    G    2) redeclare connection in every function that needs it 
-        3) create subclasses of Database e.g. WU database that has name hardcoded  '''
 class Database:
     name = ""
     tables = []
@@ -244,7 +178,6 @@ class Database:
         for name in nameList:
             self.tables.append(Table(name[0], "prediction", self.name, False, None, None))
 
-    # add a new table to the tables list, return this table for caller to add rows to
     def addNewTable(self, prefix, data):
         date = datetime.datetime(int(data['hourly_forecast'][0]['FCTTIME']['year']),
                      int(data['hourly_forecast'][0]['FCTTIME']['mon']),
@@ -257,7 +190,6 @@ class Database:
         except:
             return
         self.tables.append(tmpTable)
-
 
     def getTableNames(self):
         cursor = sqlite3.connect(self.name, detect_types=sqlite3.PARSE_DECLTYPES).execute("SELECT name FROM sqlite_master WHERE type='table';")

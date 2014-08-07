@@ -17,6 +17,8 @@ import traceback
 import datetime
 import requests
 from time import sleep
+import comparisonFunctions
+
 
 '''
 		arrange by clearness of condition, then possibly by temperature of occurence
@@ -56,6 +58,8 @@ class WeatherUndergroundAPI:
 	def __init__(self):
 		print(str(datetime.datetime.now()) + "   api constructor")
 		self.addPrediction()
+		comparisonFunctions.completeStatsTableBuild(self.db)
+
 
 
 	def addPrediction(self):
