@@ -3,45 +3,46 @@ import sqlInterface
 
 
 '''  given a prediction and the reality, return a statistical analysis '''
-def comparePrediction(prediction, groundTruth):
+def predarePrediction(prediction, groundTruth):
 	return True
 
 
 def completeStatsTableBuild(db):
-	# for all tables in database
-	for baseTable in db.tables:
-		baseTime = strToDt(baseTable.rows[0].timeStamp)
-		for compTable in db.tables:
-			compTime = strToDt(compTable.rows[0].timeStamp)
-			if(baseTime > compTime):
-				diffInTableTime = timeDiff(baseTable.rows[0], compTable.rows[0])
-				if(diffInTableTime < 36):
-					pred = compTable.rows[diffInTableTime]
-					print(str(baseTable.rows[0]) + "    " + str(pred) + "    " + str(diffInTableTime))
-					print(getDiffBtwnPredictions(baseTable.rows[0], pred))
+	'''
+	# for all tables in dataobserv
+	for observTable in db.tables:
+		observTime = strToDt(observTable.rows[0].timeStamp)
+		for predTable in db.tables:
+			predTime = strToDt(predTable.rows[0].timeStamp)
 
+			diffInTableTime = timeDiff(observTable.rows[0], predTable.rows[0])
+			if(0 < diffInTableTime and diffInTableTime < 36):
+				pred = predTable.rows[diffInTableTime]
+				print(str(observTable.rows[0]) + "    " + str(pred) + "    " + str(diffInTableTime))
+				print(getDiffBtwnPredictions(observTable.rows[0], pred))
+	'''
 
 	# extract current weather from table
 
 	# extract prediciton from previous 36 hours of table
 
-	# do comparison
+	# do predarison
 
-	# add comparison to appropriate stats table 
+	# add predarison to appropriate stats table 
 
 
 # return a prediction that is the
 # Prediction(None, timeDiff, points_diff, degrees_diff, percent_diff, rain_amount_diff, percent_diff, mph_diff)
 # pred = Prediction(initializeDatetime(), initializeDatetime(), "none", 75.0, 60, 0.2, 10, 15)
-def getDiffBtwnPredictions(base, comp):
-	return(sqlInterface.Prediction(None,
-						timeDiff(base, comp),
-						difInCondition(base,comp),
-						(base.temperature - comp.temperature),
-						(base.humidity - comp.humidity),
-						(base.rainAmount - comp.rainAmount),
-						(base.rainChance - comp.rainChance),
-						(base.wind - comp.wind)
+def getDiffBtwnPredictions(observ, pred):
+	return(sqlInterface.Prediction("",
+						timeDiff(pred, observ),
+						difInCondition(pred,observ),
+						(pred.temperature - observ.temperature),
+						(pred.humidity - observ.humidity),
+						(pred.rainAmount - observ.rainAmount),
+						(pred.rainChance - observ.rainChance),
+						(pred.wind - observ.wind)
 					)
 			)
 
@@ -60,8 +61,8 @@ def getDiffBtwnPredictions(base, comp):
 									7(thunderstorm)
 	error prediciton [-7, 7] -7= predicted thunderstorms and was sunny, 7= predicted clear and thunderstorms 
 '''
-def difInCondition(base, comp):
-	return(condToInt(base.condition) - condToInt(comp.condition))
+def difInCondition(observ, pred):
+	return(condToInt(observ.condition) - condToInt(pred.condition))
 
 
 def condToInt(cond):
@@ -91,13 +92,24 @@ def analyzeStatsTable():
 	return True
 
 '''  return number of hours between datetimes '''
-def timeDiff(base, comp):
+def timeDiff(observ, pred):
 	hours = 0
-	deltaDays = strToDt(base.timeStamp) - strToDt(comp.timeStamp).days
+	tDelta = strToDt(observ.timeStamp) - strToDt(pred.timeStamp)
+	print(observ.timeStamp + "   " + pred.timeStamp + "    tDelta: " + str(tDelta))
+
+	changeAmount = 0
+	deltaDays = tDelta.days
 	hours += tDelta.seconds/3600
-	while(deltaDays > 0):
-		hours += 24
-		deltaDays -= 1
+	if(deltaDays >= 0):			# positive amount of time
+		changeAmount = 1
+		print("pos")
+	else:
+		changeAmount = -1
+		print("neg")
+
+	while(deltaDays != 0):
+		hours += changeAmount*24
+		deltaDays -= changeAmount
 	return(hours)
 
 

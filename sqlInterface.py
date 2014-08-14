@@ -50,9 +50,15 @@ class Prediction(object):
         self.wind = wind
 
     def __repr__(self):
+        
         return "%s;%s;%s;%f;%d;%f;%d;%d" % (self.timeStamp, self.timeOfPrediction, self.condition, 
                                         self.temperature, self.humidity, self.rainAmount, 
                                         self.rainChance, self.wind)
+        '''
+        return "%s,%s,%f,%d,%f,%d,%d" % (self.timeStamp, self.condition, 
+                                self.temperature, self.humidity, self.rainAmount, 
+                                self.rainChance, self.wind)
+        '''
 
 def adapt_point(pred):
     return "%s;%s;%s;%f;%d;%f;%d;%d" % (pred.timeStamp, pred.timeOfPrediction, pred.condition, 
@@ -209,5 +215,18 @@ def twoDigitNum(num):
         return("0" + str(num))
     else:
         return(str(num))
+
+def createDatabaseWithOneTableForEachHour():
+    con = sqlite3.connect("stats.db", detect_types=sqlite3.PARSE_DECLTYPES)
+    cur = con.cursor()
+
+    for num in range(1,35):
+        cmd = "create table hour_"
+        cmd += str(num)
+        cmd += " (p Prediction, timeStamp TEXT)"
+
+        print("sqlInterface:  " + cmd)
+        cur.execute(cmd)
+
 
 
