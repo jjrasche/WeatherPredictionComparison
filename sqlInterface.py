@@ -75,13 +75,9 @@ sqlite3.register_converter("Prediction", convert_point)
 
 
 class Table:
-    dbName = ""
-    tableName = ""
-    tableType = ""
-    printThis = True
-    isNew = False
 
     def __init__(self, tableName, tableType, dbName, new, data, date):
+        self.printThis = True
         self.dbName = dbName
         self.tableName = tableName  
         self.isNew = new
@@ -89,6 +85,9 @@ class Table:
         self.rows = []
         self.con = sqlite3.connect(dbName, detect_types=sqlite3.PARSE_DECLTYPES)
         self.cur = self.con.cursor()
+
+        self.isStatsTable = self.statsTableLogic(tableName)
+
         if (new == False):
             self.addAllExistingRows()
         else:
@@ -96,18 +95,28 @@ class Table:
             self.addAllNewRows(data, date)
             self.commitChanges()
 
+
+    def statsTableLogic(self, tableName):
+        if(tableName == "stats"):
+            return(True)
+        return(False)
+
     def addAllExistingRows(self):
-        # pull table data 
-        cmd = "select * from " + self.tableName
-        predictions = self.cur.execute(cmd).fetchall()
-        for pred in predictions:
-            self.rows.append(pred[0])
+        try:
+            # pull table data 
+            cmd = "select * from " + self.tableName
+            predictions = self.cur.execute(cmd).fetchall()
+            for pred in predictions:
+                self.rows.append(pred[0])
+        except:
+            print(str(datetime.datetime.now()) +"  table operation")
+            print(traceback.format_exc())
 
     def addAllNewRows(self, data, date):
         for hr in range(0,36):
             # form arguments of prediction
-            time = date
-            top = date + datetime.timedelta(hours=hr)
+            time = str(date)
+            top = str(date + datetime.timedelta(hours=hr))
             cond = data['hourly_forecast'][hr]['condition']
             temp = float(data['hourly_forecast'][hr]['temp']['english'])
             hum = int(data['hourly_forecast'][hr]['humidity'])
@@ -125,6 +134,8 @@ class Table:
         if(self.printThis):
             print("sqlInterface: " + cmd)
         self.cur.execute(cmd, (prediction,))
+        self.commitChanges()
+
 
     def createTable(self):
         cmd = "create table "
@@ -137,8 +148,8 @@ class Table:
             self.cur.execute(cmd)
             self.commitChanges()
         except:
-            print(str(datetime.datetime.now()) +" table already created")
-            print(traceback.format_exc()) 
+            #print(str(datetime.datetime.now()) +" table already created")
+            #print(traceback.format_exc()) 
             raise
 
     def deleteTable(self):
@@ -152,7 +163,7 @@ class Table:
     def printTable(self):
         count = 0
         for row in self.rows:
-            print(str(count) + str(row))
+            print(str(count) + "  " + str(row))
             count = count + 1
         return(count)
 
@@ -166,23 +177,29 @@ class Table:
 
     def commitChanges(self):
         self.con.commit()
-        sleep(.3)
+        #sleep(.3)
         if(self.printThis):
             print("sqlInterface:  commiting changes")
 
 
+''' 
+    - want to use a map rather than a list, to pull out a specific stats 'hour' table when I want to easier 
+    - can't query sql arbitray objects stored using detect_types,  so will need to separate out the stats into tables based on hours
+'''
 class Database:
-    name = ""
-    tables = []
 
     def __init__(self, dbName):
         self.name = dbName
+        self.dataTables = []
+        self.statsTable = Table("stats", "prediction", self.name, False, None, None)
         self.loadTables()   # load tables
 
     def loadTables(self):
         nameList = self.getTableNames()
         for name in nameList:
-            self.tables.append(Table(name[0], "prediction", self.name, False, None, None))
+            if(name[0] == "stats"): continue
+            self.dataTables.append(Table(name[0], "prediction", self.name, False, None, None))
+            #self.dataTables[name] = Table(name[0], "prediction", self.name, False, None, None)
 
     def addNewTable(self, prefix, data):
         date = datetime.datetime(int(data['hourly_forecast'][0]['FCTTIME']['year']),
@@ -191,11 +208,12 @@ class Database:
                      int(data['hourly_forecast'][0]['FCTTIME']['hour']),
                      int(data['hourly_forecast'][0]['FCTTIME']['min']))
         tableName = prefix + str(date.year) + '_' + twoDigitNum(date.month) + '_' + twoDigitNum(date.day) + '_' + twoDigitNum(date.hour) +"00"
-        try:
-            tmpTable = Table(tableName, "prediction", self.name, True, data, date) 
-        except:
-            return
-        self.tables.append(tmpTable)
+        tmpTable = Table(tableName, "prediction", self.name, True, data, date) 
+
+        self.dataTables.append(tmpTable)
+        print(tmpTable.rows[0])
+        #self.dataTables[tableName] = tmpTable
+        return(tmpTable)
 
     def getTableNames(self):
         cursor = sqlite3.connect(self.name, detect_types=sqlite3.PARSE_DECLTYPES).execute("SELECT name FROM sqlite_master WHERE type='table';")
@@ -217,16 +235,33 @@ def twoDigitNum(num):
         return(str(num))
 
 def createDatabaseWithOneTableForEachHour():
-    con = sqlite3.connect("stats.db", detect_types=sqlite3.PARSE_DECLTYPES)
+    con = sqlite3.connect("WUnderground_Stats.db", detect_types=sqlite3.PARSE_DECLTYPES)
     cur = con.cursor()
 
-    for num in range(1,35):
+    for num in range(1,36):
         cmd = "create table hour_"
         cmd += str(num)
-        cmd += " (p Prediction, timeStamp TEXT)"
+        cmd += " (p Prediction)"
 
         print("sqlInterface:  " + cmd)
         cur.execute(cmd)
+
+
+def createStatsTable():
+    con = sqlite3.connect("WUnderground.db", detect_types=sqlite3.PARSE_DECLTYPES)
+    cur = con.cursor()
+    cmd = "create table stats (p Prediction)"
+    print("sqlInterface:  " + cmd)
+    cur.execute(cmd)
+    con.commit()
+
+    con = sqlite3.connect("WUnderground.db", detect_types=sqlite3.PARSE_DECLTYPES)
+    cur = con.cursor()
+    pred = Prediction(initializeDatetime(), initializeDatetime(), "none", 75.0, 60, 0.2, 10, 15)
+    cmd = "insert into  stats (p) values (?)"
+    print("sqlInterface: " + cmd)
+    cur.execute(cmd, (pred,))
+    con.commit()
 
 
 

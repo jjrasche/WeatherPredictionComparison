@@ -1,0 +1,55 @@
+<html lang="en">
+<head>
+    <title id='Description'>jqxChart Line Series Example</title>
+    <link rel="stylesheet" href="../../jqwidgets/styles/jqx.base.css" type="text/css" />
+    <script type="text/javascript" src="../../scripts/jquery-1.11.0.min.js"></script>
+    <script type="text/javascript" src="../../jqwidgets/jqxcore.js"></script>
+    <script type="text/javascript" src="../../jqwidgets/jqxdata.js"></script>
+    <script type="text/javascript" src="../../jqwidgets/jqxchart.core.js"></script>
+    <script type="text/javascript" src="../../jqwidgets/jqxdraw.js"></script>
+    <script type="text/javascript">
+            $(document).ready(function () {
+    // prepare the data
+    var source = { datafields: [{ name: 'Date', type: 'date' },{ name: 'Quantity' },{ name: 'Description' }],
+        root: "Orders",
+        record: "Order",
+        datatype: "xml",
+        url: 'xmldata.xml'
+    }
+    var dataAdapter = new $.jqx.dataAdapter(source);
+    // prepare jqxChart settings
+    var settings = {
+        title: "Order Details",
+        showLegend: true,
+        source: dataAdapter,
+        categoryAxis: {
+            type: 'date',
+            baseUnit: 'month',
+            dataField: 'Date',
+            formatFunction: function (value) {
+                var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                return months[new Date(value).getMonth()];
+            },
+            showGridLines: true
+        },
+        colorScheme: 'scheme04',
+        seriesGroups:[{
+            type: 'line',
+            valueAxis:{
+                displayValueAxis: true,
+                axisSize: 'auto',
+                tickMarksColor: '#888888'
+            },
+            series: [{ dataField: 'Quantity', displayText: 'Quantity' }]
+        }]
+    };
+    // setup the chart
+    $('#jqxChart').jqxChart(settings);
+});
+    </script>
+</head>
+<body class='default'>
+    <div id='jqxChart' style="width: 680px; height: 400px">
+    </div>
+</body>
+</html>

@@ -8,34 +8,37 @@ def predarePrediction(prediction, groundTruth):
 
 
 def completeStatsTableBuild(db):
-	'''
-	# for all tables in dataobserv
-	for observTable in db.tables:
-		observTime = strToDt(observTable.rows[0].timeStamp)
-		for predTable in db.tables:
-			predTime = strToDt(predTable.rows[0].timeStamp)
+	for observTable in db.dataTables:
+		if(observTable.isStatsTable): continue
+		addNewStats(db, observTable)
 
-			diffInTableTime = timeDiff(observTable.rows[0], predTable.rows[0])
-			if(0 < diffInTableTime and diffInTableTime < 36):
-				pred = predTable.rows[diffInTableTime]
-				print(str(observTable.rows[0]) + "    " + str(pred) + "    " + str(diffInTableTime))
-				print(getDiffBtwnPredictions(observTable.rows[0], pred))
-	'''
 
-	# extract current weather from table
 
-	# extract prediciton from previous 36 hours of table
 
-	# do predarison
+def addNewStats(db, observTable):
+	for predTable in db.dataTables:
+		if(predTable.isStatsTable): continue
+		diff = timeDiff(observTable.rows[0], predTable.rows[0])
 
-	# add predarison to appropriate stats table 
+		if (0 < diff and diff < 36):
+			pred = predTable.rows[diff]
+			comp = getDiffBtwnPredictions(observTable.rows[0], pred)
+			#print(str(observTable.rows[0]) + "    " + str(pred) + "    " + str(timeDiff))
+			#print(comp)
+			db.statsTable.addRow(comp)
+	db.statsTable.commitChanges()
+
+
+
+
+
 
 
 # return a prediction that is the
 # Prediction(None, timeDiff, points_diff, degrees_diff, percent_diff, rain_amount_diff, percent_diff, mph_diff)
 # pred = Prediction(initializeDatetime(), initializeDatetime(), "none", 75.0, 60, 0.2, 10, 15)
 def getDiffBtwnPredictions(observ, pred):
-	return(sqlInterface.Prediction("",
+	return(sqlInterface.Prediction(observ.timeStamp,
 						timeDiff(pred, observ),
 						difInCondition(pred,observ),
 						(pred.temperature - observ.temperature),
@@ -45,7 +48,6 @@ def getDiffBtwnPredictions(observ, pred):
 						(pred.wind - observ.wind)
 					)
 			)
-
 '''
 		arrange by clearness of condition, then possibly by temperature of occurence
 
@@ -61,6 +63,8 @@ def getDiffBtwnPredictions(observ, pred):
 									7(thunderstorm)
 	error prediciton [-7, 7] -7= predicted thunderstorms and was sunny, 7= predicted clear and thunderstorms 
 '''
+
+
 def difInCondition(observ, pred):
 	return(condToInt(observ.condition) - condToInt(pred.condition))
 
@@ -95,24 +99,20 @@ def analyzeStatsTable():
 def timeDiff(observ, pred):
 	hours = 0
 	tDelta = strToDt(observ.timeStamp) - strToDt(pred.timeStamp)
-	print(observ.timeStamp + "   " + pred.timeStamp + "    tDelta: " + str(tDelta))
+	#print(observ.timeStamp + "   " + pred.timeStamp + "    tDelta: " + str(tDelta))
 
 	changeAmount = 0
 	deltaDays = tDelta.days
 	hours += tDelta.seconds/3600
 	if(deltaDays >= 0):			# positive amount of time
 		changeAmount = 1
-		print("pos")
 	else:
 		changeAmount = -1
-		print("neg")
 
 	while(deltaDays != 0):
 		hours += changeAmount*24
 		deltaDays -= changeAmount
 	return(hours)
-
-
 
 
 def strToDt(string):

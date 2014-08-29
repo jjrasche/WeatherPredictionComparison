@@ -8,11 +8,13 @@ import datetime
 
 api = WeatherUndergroundAPI.WeatherUndergroundAPI()
 
+'''
 r1 = api.db.tables[0].rows[0]
 r2 = api.db.tables[0].rows[30]
 
 t1 = comparisonFunctions.strToDt(r1.timeStamp)
 t2 = comparisonFunctions.strToDt(r2.timeOfPrediction)
+'''
 
 o1 = sqlInterface.Prediction(str(datetime.datetime(2014, 8, 13, 21, 0, 0, 0)), str(datetime.datetime(2014, 8, 13, 21, 0, 0, 0)), "Clear", 67.000000, 59, 0.000000, 1, 2)   
 p1 = sqlInterface.Prediction(str(datetime.datetime(2014, 8, 13, 22, 0, 0, 0)), str(datetime.datetime(2014, 8, 14, 21, 0, 0, 0)), "Chance of Rain", 62.000000, 80, 0.250000, 25, 20)   
@@ -20,9 +22,15 @@ p1 = sqlInterface.Prediction(str(datetime.datetime(2014, 8, 13, 22, 0, 0, 0)), s
 o2 = sqlInterface.Prediction(str(datetime.datetime(2014, 8, 5, 23, 0, 0, 0)), str(datetime.datetime(2014, 8, 5, 23, 0, 0, 0)), "Clear", 67.000000, 59, 0.000000, 1, 2)   
 p2 = sqlInterface.Prediction(str(datetime.datetime(2014, 8, 4, 18, 0, 0, 0)), str(datetime.datetime(2014, 8, 5, 23, 0, 0, 0)), "Chance of Rain", 62.000000, 80, 0.250000, 25, 20)   
 
-
-
-
+'''
+for y in range(0,3):
+    if(y == 1):
+        continue
+    for x in range(0,9):
+        if(x == 7):
+            continue
+        print(str(y)+str(x))
+'''
 
 
 

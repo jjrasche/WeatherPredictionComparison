@@ -36,35 +36,38 @@ import comparisonFunctions
 	error prediciton [-7, 7] -7= predicted thunderstorms and was sunny, 7= predicted clear and thunderstorms 
 
 '''
-typesOfConditions = ['Chance of Rain','Chance of Freezing Rain','Chance of Sleet','Chance of Snow', \
-					'Chance of Thunderstorms','Clear','Mostly Cloudy','Partly Cloudy','Cloudy','Flurries', \
-					'Fog','Haze','Mostly Sunny','Partly Sunny','Freezing Rain','Rain','Sleet','Sunny',\
-					'Thunderstorm','Unknown','Overcast','Snow','Scattered Clouds']
-
-
+print("in API")
+goodData = False
 # connext to API
 try:
 	data = requests.get(r'http://api.wunderground.com/api/30ee77078e4be97c/hourly/q/MI/Lansing.json').json()
+	goodData = True
 except:
 	print(str(datetime.datetime.now()) + "   could not connect to network")
 	print(traceback.format_exc())
-	exit(0)
+	goodData = False
+	#exit(0)
 
 # API has a database, database has tables and current table 
 class WeatherUndergroundAPI:
 	db = sqlInterface.Database("WUnderground.db")
 
-
 	def __init__(self):
 		print(str(datetime.datetime.now()) + "   api constructor")
-		self.addPrediction()
-		comparisonFunctions.completeStatsTableBuild(self.db)
+		if(goodData):
+			predTable = self.addPrediction()
+			print(predTable)
+			if(predTable):
+				comparisonFunctions.addNewStats(self.db, predTable)
+		#comparisonFunctions.completeStatsTableBuild(self.db)
 
 
 
 	def addPrediction(self):
 		try:
 			table = self.db.addNewTable("weatherUnderground", data)
+			print(table.rows[0])
+			return(table)
 		except:
 			print(str(datetime.datetime.now()) +"  table operation")
 			print(traceback.format_exc())
