@@ -1,0 +1,90 @@
+<html>
+<head>
+      
+  <!-- Load jQuery and jQuery UI -->
+  <script src="//code.jquery.com/jquery-1.9.1.js"></script>
+  <script src="//code.jquery.com/ui/1.10.3/jquery-ui.js"></script>
+  
+  <!-- Load the jQuery UI CSS -->
+  <link rel="stylesheet" href="//code.jquery.com/ui/1.11.1/themes/smoothness/jquery-ui.css">
+  <link rel="stylesheet" href="/resources/demos/style.css">
+
+
+  <!-- jQuery UI Slider code -->
+  <script>
+  var varOption = ["cond", "temp", "hum", "rainAmnt", "rainChnc", "wind"]
+  var hours = 0
+  var option = ""
+  // When the browser is ready...
+  /*
+  var steps = [
+    "very sad",
+    "sad",
+    "not so sad",
+    "happy",
+    "very happy"
+];
+
+$(function() {
+    $("#slider").slider({
+        value: 1,
+        min: 0,
+        max: 4,
+        step: 1,
+        slide: function(event, ui) {
+            $("#amount").val(steps[ui.value]);
+        }
+    });
+    $("#amount").val(steps[$("#slider").slider("value")]);
+});
+*/
+  $(function() {
+  
+    // Create a new jQuery UI Slider element
+    // and set some default parameters.
+    $( "#hourSlider" ).slider({
+      min: 1,
+      max: 36,
+      slide: function( event, ui ) {
+        alert(ui.value)
+      }
+    });
+    $( "#slider-vertical" ).slider({
+      orientation: "vertical",
+      range: "min",
+      min: 0,
+      max: 100,
+      value: 60,
+      slide: function( event, ui ) {
+        $( "#amount" ).val( ui.value );
+      }
+    });
+    //$( "#slider" ).slider();      
+  });
+*/
+  </script>
+  
+    <!--  The div that is used as the slider container  -->
+  <div id="slider"></div>
+  <div id="slider-vertical" style="height:200px;"></div>
+  <div id="optionSlider" style="margin-top:100px;"></div>
+  <div id="hourSlider" style="margin-top:100px;"></div>
+<!--
+  <select id="multiple" multiple="multiple">
+    <option>-none-</option>
+    <option>condition</option>
+    <option>temperature</option>
+    <option>humidity</option>
+    <option>rain amount</option>
+    <option>rain chance</option>
+    <option>wind</option>
+  </select>
+  <div id="hours" style="color:#777;font-size:72px;text-align:center;"></div>
+  <div id="option" style="color:#777;font-size:72px;text-align:center;"></div>
+-->
+  <input id="input" type="text" name="r" value="radio2"> radio2
+
+
+
+</body>
+</html>

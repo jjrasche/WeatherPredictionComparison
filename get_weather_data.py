@@ -1,5 +1,11 @@
+'''
+
+computer must be 
+
+'''
+
 from time import sleep
-#sleep(30)   # wait for internet connection to be made if waking from sleep
+sleep(45)   # wait for internet connection to be made if waking from sleep
 import WeatherUndergroundAPI
 import sqlInterface
 import comparisonFunctions

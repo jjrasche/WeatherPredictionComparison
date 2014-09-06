@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>jQuery UI Slider - Slider bound to select</title>
+  <link rel="stylesheet" href="//code.jquery.com/ui/1.11.1/themes/smoothness/jquery-ui.css">
+  <script src="//code.jquery.com/jquery-1.10.2.js"></script>
+  <script src="//code.jquery.com/ui/1.11.1/jquery-ui.js"></script>
+  <link rel="stylesheet" href="/resources/demos/style.css">
+  <script>
+  //  run the function after the page loads $()  after dom is ready    same as $(document).ready()
+  $(function() {
+      $.ajax({
+          url:"receiver.php", 
+          type:"GET", 
+          async: false,
+          success:function(result){
+            $("#QueryCommand").html(result);
+            alert(result)
+          },
+          error:function(result){
+            $("#QueryCommand").html(result);
+            alert(result)
+          }
+      });
+  });
+  </script>
+</head>
+<body>
+
+<div id="this"><div>
+<!--
+<select name="minbeds" id="this2">
+  <option>hello</option>
+  <option>2</option>
+  <option>3</option>
+  <option>4</option>
+  <option>5</option>
+  <option>6</option>
+</select>
+-->
+ 
+ 
+</body>
+</html>

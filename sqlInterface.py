@@ -18,7 +18,7 @@ import datetime
 import traceback
 from time import sleep
 import os
-
+import MySQLdb
 # return a datetime initialized to noon on my birthday
 def initializeDatetime():
     return(datetime.datetime(1988, 01, 23, 0, 0, 0, 0))
@@ -26,6 +26,9 @@ def initializeDatetime():
 def strToDatetime(string):
     string = string.replace(" ", "-")
     return(time.strptime(string, "%Y-%m-%d-%H:%M:%S"))
+
+def strToDt(string):
+    return(datetime.datetime.strptime(string, "%Y-%m-%d %H:%M:%S"))
 
 
 # pred = Prediction(initializeDatetime(), initializeDatetime(), "none", 75.0, 60, 0.2, 10, 15)
@@ -40,8 +43,12 @@ class Prediction(object):
     wind = 0.0                                  # mph
     
     def __init__(self, time, top, cond, temp, hum, rainAmount, pop, wind):
-        self.timeStamp = time
-        self.timeOfPrediction = top
+        self.timeStamp = strToDt(str(time))
+        # small modificaiton to make the stats table work
+        if(type(top) == int):
+            self.timeOfPrediction = top
+        else:
+            self.timeOfPrediction = strToDt(str(top))
         self.condition = cond
         self.temperature = temp
         self.humidity = hum
@@ -50,42 +57,25 @@ class Prediction(object):
         self.wind = wind
 
     def __repr__(self):
-        
-        return "%s;%s;%s;%f;%d;%f;%d;%d" % (self.timeStamp, self.timeOfPrediction, self.condition, 
-                                        self.temperature, self.humidity, self.rainAmount, 
-                                        self.rainChance, self.wind)
-        '''
-        return "%s,%s,%f,%d,%f,%d,%d" % (self.timeStamp, self.condition, 
+        if(type(self.timeOfPrediction) == int):
+            return "'%s', %d, '%s', %.1f, %d, %.1f, %d, %d" % (self.timeStamp, self.timeOfPrediction, self.condition, 
                                 self.temperature, self.humidity, self.rainAmount, 
                                 self.rainChance, self.wind)
-        '''
-
-def adapt_point(pred):
-    return "%s;%s;%s;%f;%d;%f;%d;%d" % (pred.timeStamp, pred.timeOfPrediction, pred.condition, 
-                                        pred.temperature, pred.humidity, pred.rainAmount, 
-                                        pred.rainChance, pred.wind)
-
-def convert_point(s):
-    time, top, cond, temp, hum, rainAmount, pop, wind = s.split(";")
-    return Prediction(time, top, cond, float(temp), int(hum), float(rainAmount), int(pop), int(wind))
-
-# Register the adapter and converter
-sqlite3.register_adapter(Prediction, adapt_point)
-sqlite3.register_converter("Prediction", convert_point)
+        else:
+            return "'%s', '%s', '%s', %.1f, %d, %.1f, %d, %d" % (self.timeStamp, self.timeOfPrediction, self.condition, 
+                                            self.temperature, self.humidity, self.rainAmount, 
+                                            self.rainChance, self.wind)
 
 
 class Table:
 
-    def __init__(self, tableName, tableType, dbName, new, data, date):
+    def __init__(self, tableName, tableType, db, new, data, date):
         self.printThis = True
-        self.dbName = dbName
+        self.db = db
         self.tableName = tableName  
         self.isNew = new
         self.tableType = tableType
         self.rows = []
-        self.con = sqlite3.connect(dbName, detect_types=sqlite3.PARSE_DECLTYPES)
-        self.cur = self.con.cursor()
-
         self.isStatsTable = self.statsTableLogic(tableName)
 
         if (new == False):
@@ -102,15 +92,19 @@ class Table:
         return(False)
 
     def addAllExistingRows(self):
+        print("adding table: " + self.tableName)
         try:
             # pull table data 
-            cmd = "select * from " + self.tableName
-            predictions = self.cur.execute(cmd).fetchall()
-            for pred in predictions:
-                self.rows.append(pred[0])
+            cmd = "SELECT * FROM " + self.tableName + ";"
+            cur = self.db.conn.cursor()
+            cur.execute(cmd)
+            predictions = cur.fetchall()
+            for p in predictions:
+                self.rows.append(Prediction(p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7]))
         except:
             print(str(datetime.datetime.now()) +"  table operation")
             print(traceback.format_exc())
+
 
     def addAllNewRows(self, data, date):
         for hr in range(0,36):
@@ -123,29 +117,40 @@ class Table:
             rainAmount = float(data['hourly_forecast'][hr]['qpf']['english'])
             pop = int(data['hourly_forecast'][hr]['pop'])
             wind = int(data['hourly_forecast'][hr]['wspd']['english'])
-
+            
             self.addRow(Prediction(time, top, cond, temp, hum, rainAmount, pop, wind))
 
     def addRow(self, prediction):
             # add to local row
         self.rows.append(prediction)
             # add to database if this is a new table
-        cmd = "insert into " + self.tableName + "(p) values (?)"
+        
+        cmd = "INSERT INTO  " + self.tableName + " Values ("
+        cmd +=  str(prediction) + ");"
+
         if(self.printThis):
             print("sqlInterface: " + cmd)
-        self.cur.execute(cmd, (prediction,))
-        self.commitChanges()
+        self.db.conn.cursor().execute(cmd)
+        #self.commitChanges()
+        
 
 
     def createTable(self):
-        cmd = "create table "
+        cmd = "CREATE TABLE "
         cmd += self.tableName
-        cmd += " (p Prediction)"
-
+        cmd +=    "(ts DATETIME NOT NULL,"
+        cmd +=     "top DATETIME NOT NULL,"
+        cmd +=     "cond VARCHAR(30) NOT NULL,"
+        cmd +=     "temp FLOAT(5,1) NOT NULL,"
+        cmd +=     "hum TINYINT NOT NULL,"
+        cmd +=     "rainAmnt FLOAT(4,1) NOT NULL,"
+        cmd +=     "rainChnc TINYINT NOT NULL,"
+        cmd +=     "wind TINYINT NOT NULL);"
+    
         if(self.printThis):
             print("sqlInterface:  " + cmd)
         try:
-            self.cur.execute(cmd)
+            self.db.conn.cursor().execute(cmd)
             self.commitChanges()
         except:
             #print(str(datetime.datetime.now()) +" table already created")
@@ -153,11 +158,11 @@ class Table:
             raise
 
     def deleteTable(self):
-        cmd = "drop table "
+        cmd = "DROP TABLE "
         cmd += self.tableName
         if(self.printThis):
             print("sqlInterface:  " + cmd)
-        self.cur.execute(cmd)
+        self.db.conn.cursor().execute(cmd)
         self.commitChanges()
 
     def printTable(self):
@@ -171,12 +176,14 @@ class Table:
         cmd = "select * from " + self.tableName
         if(self.printThis):
             print("sqlInterface:  " + cmd)
-        rows = self.cur.execute(cmd).fetchall()
+        cur = self.db.conn.cursor()
+        cur.execute(cmd)
+        rows = cur.fetchall()
         for row in rows:
             print(str(type(row[0])) + "    " + str(row))
 
     def commitChanges(self):
-        self.con.commit()
+        self.db.conn.commit()
         #sleep(.3)
         if(self.printThis):
             print("sqlInterface:  commiting changes")
@@ -190,15 +197,22 @@ class Database:
 
     def __init__(self, dbName):
         self.name = dbName
+        self.conn = MySQLdb.connect(host="localhost", # your host, usually localhost
+                                    user="root", # your username
+                                    passwd="password", # your password
+                                    db="WUnderground") # name of the data base
+        print(self.conn)
         self.dataTables = []
-        self.statsTable = Table("stats", "prediction", self.name, False, None, None)
+        self.statsTable = Table("stats", "prediction", self, False, None, None)
         self.loadTables()   # load tables
+
 
     def loadTables(self):
         nameList = self.getTableNames()
+        print("type of nameList: " + str(type(nameList)))
         for name in nameList:
             if(name[0] == "stats"): continue
-            self.dataTables.append(Table(name[0], "prediction", self.name, False, None, None))
+            self.dataTables.append(Table(name[0], "prediction", self, False, None, None))
             #self.dataTables[name] = Table(name[0], "prediction", self.name, False, None, None)
 
     def addNewTable(self, prefix, data):
@@ -208,7 +222,7 @@ class Database:
                      int(data['hourly_forecast'][0]['FCTTIME']['hour']),
                      int(data['hourly_forecast'][0]['FCTTIME']['min']))
         tableName = prefix + str(date.year) + '_' + twoDigitNum(date.month) + '_' + twoDigitNum(date.day) + '_' + twoDigitNum(date.hour) +"00"
-        tmpTable = Table(tableName, "prediction", self.name, True, data, date) 
+        tmpTable = Table(tableName, "prediction", self, True, data, date) 
 
         self.dataTables.append(tmpTable)
         print(tmpTable.rows[0])
@@ -216,8 +230,9 @@ class Database:
         return(tmpTable)
 
     def getTableNames(self):
-        cursor = sqlite3.connect(self.name, detect_types=sqlite3.PARSE_DECLTYPES).execute("SELECT name FROM sqlite_master WHERE type='table';")
-        return(cursor.fetchall())
+        cur = self.conn.cursor()
+        cur.execute("SHOW TABLES;")
+        return(cur.fetchall())
 
 
         
@@ -262,6 +277,53 @@ def createStatsTable():
     print("sqlInterface: " + cmd)
     cur.execute(cmd, (pred,))
     con.commit()
+
+
+
+'''
+
+
+CREATE TABLE stats (ts DATETIME NOT NULL, 
+                    ttp TINYINT NOT NULL,
+                    cond VARCHAR(30) NOT NULL, 
+                    temp DECIMAL(5,1) NOT NULL, 
+                    hum TINYINT NOT NULL,
+                    rainAmnt DECIMAL(4,1) NOT NULL,
+                    rainChnc TINYINT NOT NULL,
+                    wind TINYINT NOT NULL)
+
+
+
+db = MySQLdb.connect(host="localhost",
+                     user="root",
+                      passwd="password",
+                      db="jonhydb")
+
+
+'''
+
+
+
+
+
+
+
+'''  obsolete code
+
+def adapt_point(pred):
+    return "%s;%s;%s;%f;%d;%f;%d;%d" % (pred.timeStamp, pred.timeOfPrediction, pred.condition, 
+                                        pred.temperature, pred.humidity, pred.rainAmount, 
+                                        pred.rainChance, pred.wind)
+
+def convert_point(s):
+    time, top, cond, temp, hum, rainAmount, pop, wind = s.split(";")
+    return Prediction(time, top, cond, float(temp), int(hum), float(rainAmount), int(pop), int(wind))
+
+# Register the adapter and converter
+sqlite3.register_adapter(Prediction, adapt_point)
+sqlite3.register_converter("Prediction", convert_point)
+
+'''
 
 
 

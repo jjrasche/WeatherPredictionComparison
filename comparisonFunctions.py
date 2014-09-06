@@ -9,7 +9,6 @@ def predarePrediction(prediction, groundTruth):
 
 def completeStatsTableBuild(db):
 	for observTable in db.dataTables:
-		if(observTable.isStatsTable): continue
 		addNewStats(db, observTable)
 
 
@@ -17,7 +16,7 @@ def completeStatsTableBuild(db):
 
 def addNewStats(db, observTable):
 	for predTable in db.dataTables:
-		if(predTable.isStatsTable): continue
+		print(predTable.tableName + "   " + observTable.tableName)
 		diff = timeDiff(observTable.rows[0], predTable.rows[0])
 
 		if (0 < diff and diff < 36):
@@ -38,6 +37,8 @@ def addNewStats(db, observTable):
 # Prediction(None, timeDiff, points_diff, degrees_diff, percent_diff, rain_amount_diff, percent_diff, mph_diff)
 # pred = Prediction(initializeDatetime(), initializeDatetime(), "none", 75.0, 60, 0.2, 10, 15)
 def getDiffBtwnPredictions(observ, pred):
+	print(str(observ) + "   " + str(type(observ.temperature)))
+	print(str(pred) + "   " + str(type(pred.temperature))) 
 	return(sqlInterface.Prediction(observ.timeStamp,
 						timeDiff(pred, observ),
 						difInCondition(pred,observ),
@@ -98,7 +99,7 @@ def analyzeStatsTable():
 '''  return number of hours between datetimes '''
 def timeDiff(observ, pred):
 	hours = 0
-	tDelta = strToDt(observ.timeStamp) - strToDt(pred.timeStamp)
+	tDelta = observ.timeStamp - pred.timeStamp
 	#print(observ.timeStamp + "   " + pred.timeStamp + "    tDelta: " + str(tDelta))
 
 	changeAmount = 0
@@ -114,6 +115,3 @@ def timeDiff(observ, pred):
 		deltaDays -= changeAmount
 	return(hours)
 
-
-def strToDt(string):
-	return(datetime.datetime.strptime(string, "%Y-%m-%d %H:%M:%S"))

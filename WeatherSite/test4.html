@@ -1,0 +1,136 @@
+<!--   
+      1) need to be able to choose the appropriate labels dependent upon the option of graph selected
+      2) play around with the spacing, look ,and layout
+
+  -->
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>jQuery UI Slider - Vertical slider</title>
+  <link rel="stylesheet" href="//code.jquery.com/ui/1.11.1/themes/smoothness/jquery-ui.css">
+  <script src="//code.jquery.com/jquery-1.10.2.js"></script>
+  <script src="//code.jquery.com/ui/1.11.1/jquery-ui.js"></script>
+  <script src="http://localhost/~jim.rasche/WeatherSite/sprintf.js"></script>
+  <script type="text/javascript" src= "Chart.js"></script>
+  <link rel="stylesheet" href="/resources/demos/style.css">
+  <script>
+    // data classes 
+    var condData = {
+
+    }
+
+
+
+    var hour = 0;
+    var varOption = ["cond", "temp", "hum", "rainAmnt", "rainChnc", "wind"];
+    var option = "cond";
+
+    $(function() {
+      $( "#hour-slider " ).slider({
+        range: "min",
+        min: 1,
+        max: 35,
+        value: 1,
+        slide: function( event, ui ) {
+          hour = ui.value
+          $( "#hour-value" ).val( hour );
+          formMessage();
+        }
+      });
+
+
+      $( "#option-slider" ).slider({
+        orientation: "vertical",
+        //range: "min",
+        min: 0,
+        max: 5,
+        value: 0,
+        slide: function( event, ui ) {
+          option = varOption[ui.value]
+          $("#option-value").val(option);
+          formMessage();
+        }
+      });
+    });
+
+
+   function createChart(d) {
+      var data = {
+        labels: d.label,
+        datasets: 
+        [
+          {
+          fillColor: "rgba(225,0,0,1)",
+          strokeColor: "rgba(225,0,0,1)",
+          data: d.data
+          }
+        ]  
+      }
+
+      var cht = document.getElementById('Graph');
+      var ctx = cht.getContext('2d');
+      var barChart = new Chart(ctx).Bar(data);
+    }
+
+
+    function formMessage() {
+      //return(sprintf("{\"option\":%s, \"hour\":%s}", option, hour));
+      var chartData;
+
+      msg = sprintf("option=%s&hour=%s", option, hour);
+
+      $.ajax({
+          url : "receiver.php",
+          type: "POST",
+          async: false,
+          data : msg,
+          success: function(data, textStatus, jqXHR)
+          {
+            var d = JSON.parse(data)
+            $("#QueryCommand").val();
+//            var label2 = JSON.parse(label);
+            $("#labels").val(d.label);
+  //          var data2 = JSON.parse(data);
+            $("#data").val(d.data);
+            //alert(data.label);
+            createChart(d);
+
+          },
+          error: function (jqXHR, textStatus, errorThrown)
+          {
+            alert(textStatus + errorThrown);
+          }
+      });
+
+    }
+
+
+  </script>
+</head>
+<body>
+ cmd <input id="QueryCommand" type="text" value="">
+     <input id="blah" type="text" value="">
+  labels<input id="labels" type="text" value="">
+  data<input id="data" type="text" value="">
+
+
+
+<p>
+  <label for="option-value">option:</label>
+  <input type="text" id="option-value" readonly style="border:0; color:#f6931f; font-weight:bold;">
+</p>
+<p>
+  <label for="hour-value">Hours:</label>
+  <input type="text" id="hour-value" readonly style="border:0; color:#f6931f; font-weight:bold;">
+</p>
+ 
+
+<div id="hour-slider" style="width:200px;"></div>
+<div id="option-slider" style="height:200px;"></div>
+<canvas id="Graph" width="200" height="200"></canvas>
+
+ 
+</body>
+</html>
