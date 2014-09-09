@@ -28,6 +28,7 @@
 		$label[] = $l;
 		$data[] = $c;
 	}
-	echo json_encode(array('label'=>$label,'data'=>$data));
+	echo $result->num_rows
+	//echo json_encode(array('label'=>$label,'data'=>$data));
 
 ?>
