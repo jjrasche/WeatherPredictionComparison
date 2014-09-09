@@ -24,14 +24,10 @@ Work Log:
     - add statistical data to visuals
       - std, var, average 
 
-
-
-Note:
-  make sure you close the div elements
   -->
 
 <!doctype html>
-<html lang="en" style="background-color:#E5E5E5;">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="description" content="">
@@ -59,21 +55,20 @@ Note:
     var varOption = ["cond", "temp", "hum", "rainAmnt", "rainChnc", "wind"];
     var option = "hum";
 
-    function formatPage() {
+    $(function() {
       $("body").css("background-color", "grey");
       $("#hourSliderValue").css({"position":"absolute","width":"30px"});
       $("#optionSliderValue").css({"position":"absolute","width":"30px"});
-    }
 
-    $(function() {
-      formatPage()
+      
+
       function setLabelPosition(thumb, label) {
           label.css('top', thumb.offset().top + label.outerHeight(true));
           label.css('left', thumb.offset().left - (label.width() - thumb.width())/ 2);        
       }
 
 
-      $("#hourSlider").slider({min: 1, max: 35, value: hour,
+      $("#hourSlider").slider({orientation: "vertical", min: 1, max: 35, value: hour,
         slide: function( event, ui ) {
           hour = ui.value
           $('#hourSliderValue').val(hour);
@@ -82,7 +77,7 @@ Note:
         },
       });
 
-      $("#optionSlider").slider({min: 0, max: 5, value: 2,
+      $("#optionSlider").slider({orientation: "vertical", min: 0, max: 5, value: 2,
         slide: function( event, ui ) {
           option = varOption[ui.value]
           $('#optionSliderValue').val(option);
@@ -195,50 +190,46 @@ Note:
 
   </script>
 </head>
-<body style="margin:0 auto;width:960px; height:100%;">
+<body>
 
-  <div id="div_IO" style="background-color:#FFA500;position:relative;wdth:100%;height:100px;">
-    <input id="labels" type="text" value="label" style="width:50px;float:left;">
-    <input id="data" type="text" value="data"style="width:50px;float:left;">
-    <input id="searchTime" type="text" value="st"style="width:50px;float:left;">
-    <input id="numResults" type="text" value="ss"style="width:50px;float:left;">
-    <input id="cmd" type="text" size="100" value="">
-  </div>
-
-
-
+  <p>
+    labels: <input id="labels" type="text" value="">
+    data: <input id="data" type="text" value="">
+    Search Time: <input id="searchTime" type="text" value="">
+    Search Size: <input id="numResults" type="text" value="">
+    <!--ip<input id="ip" type="text" value=""> -->
+  </p>
+  <p>
+    mean: <input id="mean" type="text" value="">
+    std: <input id="std" type="text" value="">
+    var: <input id="var" type="text" value="">
+  </p>
+  <p>
+    SQL command<input id="cmd" type="text" size="100" value="">
+  </p>
  
 
-  <div id="Graph1" style="position:relative; background-color:yellow; top:5px; width:300px; height:300px;">
+  hour <div id="hourSlider" style="height:200px;"></div>
+  <input id="hourSliderValue" />
 
-    <div id="Graph1_title" style="position:absolute; top:1%; left:1%; right:1%; height:5%; background-color:pink;"> </div>
-    <div id="Graph1_canvas_div" style="position:absolute; right:1%; top:7%; width:80%; height:80%; background-color:blue;"></div>
+  option<div id="optionSlider" style="height:200px;"></div>
+  <input id="optionSliderValue" />
 
-    <div id="Graph1_sliders" style="position:absolute; left:1%; right:82%; top:7%; bottom:13%;">
-      <div id="hourSlider" style="position:absolute; width:25%; height:70%; top:15%; left:5%"></div>
-      <input id="hourSliderValue" />
-      <div id="optionSlider" style="position:absolute; width:25%; height:70%; top:15%; right:5%"></div>
-      <input id="optionSliderValue" />
+  <canvas id="Graph" width="500" height="500"></canvas>
+
+
+<!-- footer
+ ================================================== -->
+ <footer>
+    <div class="row">
+       <div class="col g-7">
+          <ul class="copyright">
+             <li>Design by <a href="http://www.styleshout.com/" title="Styleshout">Styleshout</a> ... but not really</li>               
+          </ul>
+       </div>
     </div>
-
-    <div id="Graph1_stats" style="position:absolute; bottom:1%; left:1%; right:1%; height:11%; background-color:green;">
-    <!--
-      mean: <input id="mean" type="text" value="">
-      std: <input id="std" type="text" value="">
-      var: <input id="var" type="text" value="">
-      -->
-    </div>
-    
-
-  </div>
+ </footer> <!-- Footer End-->
 
  
 </body>
 </html>
-
-<!--
-      <canvas id="Graph1_canvas" width="100%" height="100%"></canvas>
-
--->
-
-

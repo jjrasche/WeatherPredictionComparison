@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <link rel="stylesheet" href="//code.jquery.com/ui/1.11.1/themes/smoothness/jquery-ui.css">
+  <link rel="stylesheet" href="/resources/demos/style.css">
+
+  <title>Weather Data Page</title>
+
+  <script src="//code.jquery.com/jquery-1.10.2.js"></script>
+  <script src="//code.jquery.com/ui/1.11.1/jquery-ui.js"></script>
+  <script src="http://localhost/~jim.rasche/WeatherSite/sprintf.js"></script>
+  <script type="text/javascript" src= "Chart.js"></script>
+  <script type="application/javascript" src="http://jsonip.appspot.com/?callback=getip"></script>
+  <script>
+
+    var hour = 0;
+    var varOption = ["cond", "temp", "hum", "rainAmnt", "rainChnc", "wind"];
+    var option = "cond";
+
+    $(function() {
+
+        $("#sliderValue").css({"position":"absolute","width":"30px"});
+        $("#slider").css({"position":"absolute","width":"120px"});
+
+   /*     
+        $('#slider').bind('slide', function () {        
+            $('#sliderValue').val($('#slider').slider('value'));
+            setLabelPosition();
+        });
+    */   
+        $("#slider").slider({min: 0,max: 150,step: 1, range: 'min',
+          slide: function( event, ui ) {
+            $('#sliderValue').val($('#slider').slider('value'));
+            setLabelPosition($($('#slider').children('.ui-slider-handle')), $('#sliderValue'));
+          }
+        });
+
+        function setLabelPosition(thumb, label) {
+            label.css('top', thumb.offset().top + label.outerHeight(true));
+            label.css('left', thumb.offset().left - (label.width() - thumb.width())/ 2);        
+        }
+
+        setLabelPosition($($('#slider').children('.ui-slider-handle')), $('#sliderValue'));    
+
+        
+    });
+  </script>
+</head>
+<body>
+    <div id="slider"></div>
+    <input id="sliderValue" />
+
+    <p>
+        labels<input id="labels" type="text" value="">
+        data<input id="data" type="text" value="">
+        searchTime<input id="searchTime" type="text" value="">
+        numResults<input id="numResults" type="text" value="">
+        <!--ip<input id="ip" type="text" value=""> -->
+    </p>
+
+
+
+
+    <p>
+        <label for="option-value">option:</label>
+        <input type="text" id="option-value" readonly style="border:0; color:#f6931f; font-weight:bold;">
+    </p>
+    <p>
+        <label for="hour-value">Hours:</label>
+        <input type="text" id="hour-value" readonly style="border:0; color:#f6931f; font-weight:bold;">
+    </p>
+     
+
+    <div id="hourSlider" style="width:200px;"></div>
+    <input id="hourSliderValue" />
+
+    <div id="optionSlider" style="height:200px;"></div>
+    <input id="optionSliderValue" />
+
+    <canvas id="Graph" width="200" height="200"></canvas>
+
+
+
+
+    <!-- footer
+    ================================================== -->
+    <footer>
+        <div class="row">
+           <div class="col g-7">
+              <ul class="copyright">
+                 <li>Design by <a href="http://www.styleshout.com/" title="Styleshout">Styleshout</a></li>               
+              </ul>
+           </div>
+        </div>
+    </footer> <!-- Footer End-->
+</body>
+</html>
+

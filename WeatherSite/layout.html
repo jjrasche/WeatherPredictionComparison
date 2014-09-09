@@ -1,0 +1,244 @@
+<!--   
+      1) need to be able to choose the appropriate labels dependent upon the option of graph selected
+      2) play around with the spacing, look ,and layout
+Work Log:
+  9/6/14
+    √ show how much time a search took   
+    √ add labels to sliders
+    √ clean up php
+    √ prevent graph from being affected by scrolling
+      Note: this seem to happen because of the sliders (WRONG ANSWER)
+      Note: previous instances of charts are being placed on the canvas when scrolled over, 
+            might be an eventhandler in chat.js code
+      Fix: destroy the previous chart before creating the next one
+
+
+    - organize the page in a more pleasing way
+      - add css for looks
+      - play with chart colors
+
+    - add a page describing how the system works
+
+
+    - collect ip of those accessing this page
+    - add statistical data to visuals
+      - std, var, average 
+
+
+
+Note:
+  make sure you close the div elements
+  -->
+
+<!doctype html>
+<html lang="en" style="background-color:#E5E5E5;">
+<head>
+  <meta charset="utf-8">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <link rel="stylesheet" href="//code.jquery.com/ui/1.11.1/themes/smoothness/jquery-ui.css">
+  <!--<link rel="stylesheet" href="/resources/demos/style.css">-->
+
+  <title>Weather Data Page</title>
+
+
+  <script src="//code.jquery.com/jquery-1.10.2.js"></script>
+  <script src="//code.jquery.com/ui/1.11.1/jquery-ui.js"></script>
+  <script src="sprintf.js"></script>
+  <script src="simple-statistics-master/src/simple_statistics.js"></script>
+  <script type="text/javascript" src= "Chart.js-master/Chart.js"></script>
+  <script type="text/javascript" src="jqwidgets-ver3.4.0/jqwidgets/jqxcore.js"></script>
+  <script type="text/javascript" src="jqwidgets-ver3.4.0/jqwidgets/jqxchart.core.js"></script>
+  <script type="text/javascript" src="jqwidgets-ver3.4.0/jqwidgets/jqxdraw.js"></script>
+  <script type="text/javascript" src="jqwidgets-ver3.4.0/jqwidgets/jqxdata.js"></script>
+  <script>
+    var barChart = null;
+    var hour = 20;
+    var varOption = ["cond", "temp", "hum", "rainAmnt", "rainChnc", "wind"];
+    var option = "hum";
+
+    function formatPage() {
+      $("body").css("background-color", "grey");
+      $("#hourSliderValue").css({"position":"absolute","width":"30px"});
+      $("#optionSliderValue").css({"position":"absolute","width":"30px"});
+    }
+
+    $(function() {
+      formatPage()
+      function setLabelPosition(thumb, label) {
+          label.css('top', thumb.offset().top + label.outerHeight(true));
+          label.css('left', thumb.offset().left - (label.width() - thumb.width())/ 2);        
+      }
+
+
+      $("#hourSlider").slider({min: 1, max: 35, value: hour,
+        slide: function( event, ui ) {
+          hour = ui.value
+          $('#hourSliderValue').val(hour);
+          setLabelPosition($($('#hourSlider').children('.ui-slider-handle')), $('#hourSliderValue'));
+          formMessage();
+        },
+      });
+
+      $("#optionSlider").slider({min: 0, max: 5, value: 2,
+        slide: function( event, ui ) {
+          option = varOption[ui.value]
+          $('#optionSliderValue').val(option);
+          setLabelPosition($($('#optionSlider').children('.ui-slider-handle')), $('#optionSliderValue'));
+          formMessage();
+        }
+      });
+
+      // initialize labels position and value
+      $('#hourSliderValue').val(hour);
+      $('#optionSliderValue').val(option);
+      setLabelPosition($($('#hourSlider').children('.ui-slider-handle')), $('#hourSliderValue'));    
+      setLabelPosition($($('#optionSlider').children('.ui-slider-handle')), $('#optionSliderValue'));    
+      formMessage();
+    });
+
+
+   function createChart(d) {
+      var data = {
+        labels: d.label,
+        datasets: 
+        [
+          {
+            label: "generic label",
+            fillColor: "rgba(106,149, 247,.92)",
+            strokeColor: "rgba(129,122,255,1)",
+            pointColor: "rgba(0,255,0,1)",
+            pointStrokeColor: "#fff",
+            pointHighlightFill: "#fff",
+            pointHighlightStroke: "rgba(255,0,0,1)",
+            data: d.data
+          }
+        ]  
+      }
+
+      var cht = document.getElementById('Graph');
+      var ctx = cht.getContext('2d');
+      if(barChart != null)
+        barChart.destroy();
+      barChart = new Chart(ctx).Bar(data, {
+                                        animation: false,
+                                        onAnimationComplete: function() {
+                                          console.log("animation");
+                                        },
+                                        onAnimationProgress: function(){
+                                          console.log("progress");
+                                        },
+                                        scaleGridLineColor : "rgba(0,0,0,.2)",
+                                        fillColor: "rgba(0,0,255,1)",
+                                        scaleLineColor: "rgba(0,,0,1)",
+                                        scaleFontColor: "#000",
+                                        tooltipFillColor: "rgba(0,255,0,0.8)",
+                                        tooltipFontColor: "#fff",
+                                        tooltipTitleFontColor: "#fff",
+                                        scaleShowGridLines : true,
+                                        toolTip: {enabled : false, animationEnabled : false}
+      });
+    }
+
+
+    function setStats(data, label) {
+      // create array   -4.0,-3.0,-2.0,-1.0,0.0,1.0,2.0,3.0,4.0     1,2,7,7,38,13,5,3,1
+      var arr = [];
+      var b;
+      for(var i = 0; i < data.length; i++) {   // iterate through arrays
+        for(var j = 0; j < data[i]; j++) {     // iterate through number of occurrences
+          arr[arr.length] = label[i];
+          b = label[i];
+        }
+      }
+      console.log((typeof b === 'string'));
+      $("#mean").val(ss.mean(arr));
+
+    }
+
+    function formMessage() {
+      //return(sprintf("{\"option\":%s, \"hour\":%s}", option, hour));
+      var chartData;
+
+      msg = sprintf("option=%s&hour=%s", option, hour);
+
+      $.ajax({
+          url : "receiver.php",
+          type: "POST",
+          async: false,
+          data : msg,
+          timeout: 3000,
+          success: function(data, textStatus, jqXHR)
+          {
+            var d = JSON.parse(data)
+            $("#labels").val(d.label);
+            $("#data").val(d.data);
+            $("#searchTime").val(d.searchTime);
+            $("#numResults").val(d.rows);
+            $("#cmd").val(d.cmd);
+
+            setStats(d.data, d.label);
+            //$("#ip").val(d.userIP)
+
+            createChart(d);
+          },
+          error: function (jqXHR, textStatus, errorThrown)
+          {
+            alert(textStatus + errorThrown);
+          }
+      });
+
+    }
+
+
+  </script>
+</head>
+<body style="margin:0 auto;width:960px; height:100%;">
+
+  <div id="div_IO" style="background-color:#FFA500;position:relative;wdth:100%;height:100px;">
+    <input id="labels" type="text" value="label" style="width:50px;float:left;">
+    <input id="data" type="text" value="data"style="width:50px;float:left;">
+    <input id="searchTime" type="text" value="st"style="width:50px;float:left;">
+    <input id="numResults" type="text" value="ss"style="width:50px;float:left;">
+    <input id="cmd" type="text" size="100" value="">
+  </div>
+
+
+
+ 
+
+  <div id="Graph1" style="position:relative; background-color:yellow; top:5px; width:450px; height:450px;">
+
+    <div id="Graph1_title" style="position:absolute; top:1%; left:1%; right:1%; height:5%; background-color:pink;"> </div>
+    <div id="Graph1_canvas_div" style="position:absolute; right:1%; top:7%; width:80%; height:80%; background-color:blue;"></div>
+
+    <div id="Graph1_sliders" style="position:absolute; left:1%; right:82%; top:7%; bottom:13%;">
+      <div id="hourSlider" style="position:absolute; width:25%; height:70%; top:15%; left:5%"></div>
+      <input id="hourSliderValue" />
+      <div id="optionSlider" style="position:absolute; width:25%; height:70%; top:15%; right:5%"></div>
+      <input id="optionSliderValue" />
+    </div>
+
+    <div id="Graph1_stats" style="position:absolute; bottom:1%; left:1%; right:1%; height:11%; background-color:green;">
+    <!--
+      mean: <input id="mean" type="text" value="">
+      std: <input id="std" type="text" value="">
+      var: <input id="var" type="text" value="">
+      -->
+    </div>
+    
+
+  </div>
+
+ 
+</body>
+</html>
+
+<!--
+      <canvas id="Graph1_canvas" width="100%" height="100%"></canvas>
+
+-->
+
+
