@@ -10,6 +10,7 @@
 	  $option = $_POST['option'];
 	} else {
 	  echo "one of the variables is null";
+	  echo json_encode(performStatsQuery(10, "temp", null));
 	  exit();
 	}
 

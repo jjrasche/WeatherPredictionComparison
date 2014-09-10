@@ -34,14 +34,13 @@ Work Log:
   <meta name="author" content="">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
-  <link rel="stylesheet" href="//code.jquery.com/ui/1.11.1/themes/smoothness/jquery-ui.css">
+  <link rel="stylesheet" href="jqueryUI_smoothness.css">
   <!--<link rel="stylesheet" href="/resources/demos/style.css">-->
 
   <title>Weather Data Page</title>
 
-
-  <script src="//code.jquery.com/jquery-1.10.2.js"></script>
-  <script src="//code.jquery.com/ui/1.11.1/jquery-ui.js"></script>
+  <script src="jqueryCore1.11.1.js"></script>
+  <script src="jqueryUI1.11.1.js"></script>
   <script src="sprintf.js"></script>
   <script src="simple-statistics-master/src/simple_statistics.js"></script>
   <script type="text/javascript" src= "Chart.js-master/Chart.js"></script>
@@ -53,51 +52,52 @@ Work Log:
     var barChart = null;
     var hour = 20;
     var varOption = ["cond", "temp", "hum", "rainAmnt", "rainChnc", "wind"];
-    var option = "hum";
+    var optionFullName = ["condition", "temperature", "humidity", "rain amount", "rain chance", "wind"];
+    var option = 3;
+    var graphSize = "450px"
+    var data_global;
+
 
     $(function() {
       $("body").css("background-color", "grey");
-      $("#hourSliderValue").css({"position":"absolute","width":"30px"});
-      $("#optionSliderValue").css({"position":"absolute","width":"30px"});
+      $("#Graph1").css({"position":"relative","background-color":"yellow","top":"5px", "width":graphSize, "height":graphSize});
 
-      
-
-      function setLabelPosition(thumb, label) {
-          label.css('top', thumb.offset().top + label.outerHeight(true));
-          label.css('left', thumb.offset().left - (label.width() - thumb.width())/ 2);        
-      }
-
+      $("#slider1").slider({min: 100, max: 800, value: hour,
+        slide: function( event, ui ) {
+          //console.log(String(ui.value));
+          //$("#Graph1").css({"Width":String(ui.value),"Height":String(ui.value)});
+          $("#Graph1").width(ui.value)
+          $("#Graph1").height(ui.value)
+          createChart();
+        },
+      });      
 
       $("#hourSlider").slider({orientation: "vertical", min: 1, max: 35, value: hour,
         slide: function( event, ui ) {
           hour = ui.value
           $('#hourSliderValue').val(hour);
-          setLabelPosition($($('#hourSlider').children('.ui-slider-handle')), $('#hourSliderValue'));
           formMessage();
         },
       });
 
       $("#optionSlider").slider({orientation: "vertical", min: 0, max: 5, value: 2,
         slide: function( event, ui ) {
-          option = varOption[ui.value]
-          $('#optionSliderValue').val(option);
-          setLabelPosition($($('#optionSlider').children('.ui-slider-handle')), $('#optionSliderValue'));
+          option = ui.value;
+          $('#optionSliderValue').val(varOption[option]);
           formMessage();
         }
       });
 
       // initialize labels position and value
       $('#hourSliderValue').val(hour);
-      $('#optionSliderValue').val(option);
-      setLabelPosition($($('#hourSlider').children('.ui-slider-handle')), $('#hourSliderValue'));    
-      setLabelPosition($($('#optionSlider').children('.ui-slider-handle')), $('#optionSliderValue'));    
+      $('#optionSliderValue').val(varOption[option]);  
       formMessage();
     });
 
 
-   function createChart(d) {
+   function createChart() {
       var data = {
-        labels: d.label,
+        labels: data_global.label,
         datasets: 
         [
           {
@@ -108,23 +108,20 @@ Work Log:
             pointStrokeColor: "#fff",
             pointHighlightFill: "#fff",
             pointHighlightStroke: "rgba(255,0,0,1)",
-            data: d.data
+            data: data_global.data
           }
         ]  
       }
 
-      var cht = document.getElementById('Graph');
+      $("#Graph1_title").val(formGraphTitle());
+      var cht = document.getElementById('Canvas1');
       var ctx = cht.getContext('2d');
       if(barChart != null)
         barChart.destroy();
+      ctx.canvas.width = parseInt($('#Graph1').css("width")) * .8;
+      ctx.canvas.height = parseInt($('#Graph1').css("height")) * .8;
       barChart = new Chart(ctx).Bar(data, {
-                                        animation: false,
-                                        onAnimationComplete: function() {
-                                          console.log("animation");
-                                        },
-                                        onAnimationProgress: function(){
-                                          console.log("progress");
-                                        },
+                                        animation : false,
                                         scaleGridLineColor : "rgba(0,0,0,.2)",
                                         fillColor: "rgba(0,0,255,1)",
                                         scaleLineColor: "rgba(0,,0,1)",
@@ -137,27 +134,28 @@ Work Log:
       });
     }
 
+    function formGraphTitle() {
+      return("Weather Underground results of " + optionFullName[option] + ", " + hour.toString() + " hours after prediction")
+    }
 
-    function setStats(data, label) {
-      // create array   -4.0,-3.0,-2.0,-1.0,0.0,1.0,2.0,3.0,4.0     1,2,7,7,38,13,5,3,1
+
+    function setStats() {
       var arr = [];
       var b;
-      for(var i = 0; i < data.length; i++) {   // iterate through arrays
-        for(var j = 0; j < data[i]; j++) {     // iterate through number of occurrences
-          arr[arr.length] = label[i];
-          b = label[i];
+      for(var i = 0; i < data_global.data.length; i++) {   // iterate through arrays
+        for(var j = 0; j < data_global.data[i]; j++) {     // iterate through number of occurrences
+          arr[arr.length] = parseFloat(data_global.label[i]);
+          b = parseFloat(data_global.label[i]);
         }
       }
-      console.log((typeof b === 'string'));
-      $("#mean").val(ss.mean(arr));
-
+      console.log((typeof b === 'int'));
+      $("#Graph1_mean").val(ss.mean(arr));
+      $("#Graph1_std").val(ss.variance(arr));
+      $("#Graph1_var").val(ss.standard_deviation(arr));
     }
 
     function formMessage() {
-      //return(sprintf("{\"option\":%s, \"hour\":%s}", option, hour));
-      var chartData;
-
-      msg = sprintf("option=%s&hour=%s", option, hour);
+      msg = sprintf("option=%s&hour=%s", varOption[option], hour);
 
       $.ajax({
           url : "receiver.php",
@@ -168,16 +166,16 @@ Work Log:
           success: function(data, textStatus, jqXHR)
           {
             var d = JSON.parse(data)
+            data_global = d;
+
             $("#labels").val(d.label);
             $("#data").val(d.data);
             $("#searchTime").val(d.searchTime);
             $("#numResults").val(d.rows);
             $("#cmd").val(d.cmd);
 
-            setStats(d.data, d.label);
-            //$("#ip").val(d.userIP)
-
-            createChart(d);
+            setStats();
+            createChart();
           },
           error: function (jqXHR, textStatus, errorThrown)
           {
@@ -190,46 +188,73 @@ Work Log:
 
   </script>
 </head>
-<body>
-
-  <p>
-    labels: <input id="labels" type="text" value="">
-    data: <input id="data" type="text" value="">
-    Search Time: <input id="searchTime" type="text" value="">
-    Search Size: <input id="numResults" type="text" value="">
-    <!--ip<input id="ip" type="text" value=""> -->
-  </p>
-  <p>
-    mean: <input id="mean" type="text" value="">
-    std: <input id="std" type="text" value="">
-    var: <input id="var" type="text" value="">
-  </p>
-  <p>
-    SQL command<input id="cmd" type="text" size="100" value="">
-  </p>
- 
-
-  hour <div id="hourSlider" style="height:200px;"></div>
-  <input id="hourSliderValue" />
-
-  option<div id="optionSlider" style="height:200px;"></div>
-  <input id="optionSliderValue" />
-
-  <canvas id="Graph" width="500" height="500"></canvas>
+<body style="margin:0 auto;width:960px; height:100%; background-color:70DB70 ">
 
 
-<!-- footer
- ================================================== -->
- <footer>
-    <div class="row">
-       <div class="col g-7">
-          <ul class="copyright">
-             <li>Design by <a href="http://www.styleshout.com/" title="Styleshout">Styleshout</a> ... but not really</li>               
-          </ul>
-       </div>
+  <H1 style="height:100%; width:100%"> Comparison of Weather Data Sources</H1>
+
+  <div id="Graph1">
+
+    <div id="Graph1_title_div" style="position:absolute; top:1%; left:1%; right:1%; height:5%; background-color:pink;"> 
+      <input id="Graph1_title" type="text" text-align="center" value="" style="position:absolute; top:1%; left:1%; right:1%; bottom:1%; width:97%;">
     </div>
- </footer> <!-- Footer End-->
+
+    <div id="Graph1_canvas_div" style="position:absolute; right:1%; top:7%; width:80%; height:80%; background-color:blue;">
+      <canvas id="Canvas1" style="top:5%; right:5%; background:orange;"></canvas>
+    </div>
+
+    <div id="Graph1_sliders" style="position:absolute; left:1%; right:82%; top:7%; bottom:13%;">
+      <div id="hourSlider" style="position:absolute; width:25%; height:70%; top:15%; left:5%;"></div>
+      <input id="hourSliderValue" style="position:absolute; width:20%; height:5%; bottom:5%; left:0%; background:white;"/>
+      <div id="optionSlider" style="position:absolute; width:25%; height:70%; top:15%; right:5%"></div>
+      <input id="optionSliderValue" style="position:absolute; width:50%; height:5%; bottom:5%; right:0%; background:white;"/>
+    </div>
+
+    <div id="Graph1_stats" style="position:absolute; bottom:1%; left:1%; right:1%; height:11%; background-color:green;">
+      <div style="position:absolute; width:33%; left:0%; top:0%;">
+        <label for="Graph1_mean">mean</label>
+        <input id="Graph1_mean" type="text" value="" style="right:0%; width:50%;">
+      </div>
+      <div style="position:absolute; width:33%; left:33%; right:33%; top:0%;">
+        <label for="Graph1_std">std</label>
+        <input id="Graph1_std" type="text" value="" style="right:0%; width:50%;">
+      </div>
+      <div style="position:absolute; width:33%; right:0%; top:0%;">
+        <label for="Graph1_var">var</label>
+        <input id="Graph1_var" type="text" value="" style="right:0%; width:50%;">
+      </div>
+    </div>
+  </div>
+
+  <div hidden id="slider1" label= style="position:relative; background-color:#FFA500; wdth:200px; height:20px;"></div>
+  <label hidden for="slider1">adjust graph size</label>
+
+
+  <div id="div_IO" style="position:relative; background-color:#FFA500; wdth:100%; height:130px;">
+    <input hidden id="labels" type="text" value="label" style="width:50px; float:left;">
+    <input hidden id="data" type="text" value="data"style="width:50px;float:left;">
+
+    <H4>Query Data</H4>
+    <div style="width:95%;float:both;">
+      <label for="searchTime">search time</label>
+      <input id="searchTime" type="text" value="">
+    </div>
+    <div style="width:100%;float:both;">
+        <label for="numResults"> search size</label>
+        <input id="numResults" type="text" value="ss"style="">
+    </div>
+    <div style="width:100%;float:both;">
+      <label for="cmd"> query command</label>
+      <input id="cmd" type="text" size="100" value="">
+    </div>
+  </div>
+
+
 
  
 </body>
 </html>
+
+
+
+
