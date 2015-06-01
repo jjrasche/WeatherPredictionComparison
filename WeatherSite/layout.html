@@ -38,14 +38,14 @@ Note:
   <meta name="author" content="">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
-  <link rel="stylesheet" href="//code.jquery.com/ui/1.11.1/themes/smoothness/jquery-ui.css">
+  <link rel="stylesheet" href="jquery-ui-1.11.1.custom/jquery-ui.css">
   <!--<link rel="stylesheet" href="/resources/demos/style.css">-->
 
   <title>Weather Data Page</title>
 
 
-  <script src="//code.jquery.com/jquery-1.10.2.js"></script>
-  <script src="//code.jquery.com/ui/1.11.1/jquery-ui.js"></script>
+  <script src="jquery-ui-1.11.1.custom/external/jquery/jquery.js"></script>
+  <script src="jquery-ui-1.11.1.custom/jquery-ui.js"></script>
   <script src="sprintf.js"></script>
   <script src="simple-statistics-master/src/simple_statistics.js"></script>
   <script type="text/javascript" src= "Chart.js-master/Chart.js"></script>
@@ -65,6 +65,7 @@ Note:
       $("#optionSliderValue").css({"position":"absolute","width":"30px"});
     }
 
+    // jquery format run function on window
     $(function() {
       formatPage()
       function setLabelPosition(thumb, label) {
@@ -179,10 +180,10 @@ Note:
             $("#numResults").val(d.rows);
             $("#cmd").val(d.cmd);
 
-            setStats(d.data, d.label);
+            // setStats(d.data, d.label);
             //$("#ip").val(d.userIP)
 
-            createChart(d);
+            // createChart(d);
           },
           error: function (jqXHR, textStatus, errorThrown)
           {

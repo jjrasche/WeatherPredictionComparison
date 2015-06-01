@@ -36,4 +36,45 @@
 					 'searchTime'=>$searchTime, 'userIP'=>$ip, "cmd"=>$QueryCommand);
 		return $ret;
 	}
+
+
+	function connectToPennyStockPrices() {
+
+		$servername = "localhost";
+		$username = "root";
+		$password = "password";
+		
+		try 
+		{
+		    $conn = new PDO("mysql:host=$servername;dbname=pennyStocks", $username, $password);
+		    // set the PDO error mode to exception
+		    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+		    echo "Connected successfully"; 
+	    	return $conn;
+	    }
+		catch(PDOException $e)
+		{
+		    echo "Connection failed: " . $e->getMessage();
+	    }
+	}
+
+	function performStockQuery($stockSymbol) {
+
+	}
 ?>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
